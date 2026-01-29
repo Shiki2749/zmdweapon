@@ -45,24 +45,33 @@
             border-color: transparent !important;
         }
 
-        /* 添加到 <style> 标签内 */
+        /* 1. 强制表格内容不换行 */
+        td, th {
+            white-space: nowrap; /* 核心代码：强制文字永远横着显示，不准折行 */
+            min-width: 80px;     /* 给每个单元格设置一个最小宽度，保证不被挤扁 */
+        }
+
+        /* 2. 针对武器名称加宽，防止长名字挤在一起 */
+        td:first-child {
+            min-width: 120px;
+            font-size: 1rem;    /* 稍微加大名字字体，方便手机点击 */
+        }
+
+        /* 3. 优化手机端表格容器，使其可以平滑滚动 */
+        .overflow-x-auto {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* 让苹果手机滑动更顺滑 */
+        }
+
+        /* 4. 针对手机屏幕极窄时的微调 */
         @media (max-width: 640px) {
-            body {
-                padding: 10px; /* 手机端减小页边距 */
-            }
-            .glass-card {
-                border-radius: 1rem; /* 手机端圆角调小一点 */
-            }
             .p-8 {
-                padding: 1.5rem; /* 减小内边距，留出更多空间给内容 */
+                padding: 1rem; /* 减小外边距，给表格腾出更多空间 */
             }
-            .filter-tag {
-                padding: 0.5rem 1rem; /* 手机上按钮稍微小一点，方便排版 */
-                font-size: 0.75rem;
-            }
-            /* 让表格在手机上可以横向滑动 */
-            .overflow-x-auto {
-                -webkit-overflow-scrolling: touch; 
+            table {
+                font-size: 13px; /* 手机端稍微调小一点字体，可以看更多内容 */
             }
         }
 
@@ -314,4 +323,5 @@
         init();
     </script>
 </body>
+
 </html>
