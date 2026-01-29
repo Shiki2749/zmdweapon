@@ -16,7 +16,6 @@
             padding: 20px;
         }
 
-        /* 毛玻璃容器 */
         .glass-card {
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(25px);
@@ -30,14 +29,14 @@
             transition: all 0.5s ease;
         }
 
-        /* 一级维度激活态 */
+        /* 维度分类激活态 */
         .cat-active {
             background: white !important;
             color: #2563eb !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* 二级标签激活态 */
+        /* 具体属性标签激活态 */
         .tag-active {
             background: #2563eb !important;
             color: white !important;
@@ -45,38 +44,29 @@
             border-color: transparent !important;
         }
 
-        /* 1. 强制表格内容不换行 */
+        /* 表格样式优化 */
         td, th {
-            white-space: nowrap; /* 核心代码：强制文字永远横着显示，不准折行 */
-            min-width: 80px;     /* 给每个单元格设置一个最小宽度，保证不被挤扁 */
+            white-space: nowrap;
+            min-width: 80px;
         }
-
-        /* 2. 针对武器名称加宽，防止长名字挤在一起 */
         td:first-child {
             min-width: 120px;
-            font-size: 1rem;    /* 稍微加大名字字体，方便手机点击 */
+            font-size: 1rem;
         }
-
-        /* 3. 优化手机端表格容器，使其可以平滑滚动 */
         .overflow-x-auto {
             display: block;
             width: 100%;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* 让苹果手机滑动更顺滑 */
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* 4. 针对手机屏幕极窄时的微调 */
+        /* 针对手机屏幕极窄时的微调 */
         @media (max-width: 640px) {
-            .p-8 {
-                padding: 1rem; /* 减小外边距，给表格腾出更多空间 */
-            }
-            table {
-                font-size: 13px; /* 手机端稍微调小一点字体，可以看更多内容 */
-            }
+            .p-8 { padding: 1rem; }
+            table { font-size: 13px; }
         }
 
         .transition-all { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -93,7 +83,17 @@
             </button>
         </div>
 
-        <div class="p-8 space-y-8">
+        <div class="p-8 space-y-6">
+            
+            <div class="flex items-center gap-3">
+                <span class="text-slate-500 text-sm font-bold">星级：</span>
+                <div class="flex bg-white/40 p-1 rounded-full border border-white/50">
+                    <button class="star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-white bg-slate-500 shadow-sm" data-star="all">全部</button>
+                    <button class="star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500 hover:bg-white/50" data-star="6">6星</button>
+                    <button class="star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500 hover:bg-white/50" data-star="5">5星</button>
+                </div>
+            </div>
+
             <div id="categoryNav" class="flex p-1.5 bg-gray-200/30 rounded-2xl w-fit"></div>
 
             <div id="tagBox" class="bg-white/40 p-6 rounded-2xl border border-white/60 min-h-[100px]"></div>
@@ -183,8 +183,8 @@
 
         let currentFilters = {};
         FILTER_CONFIG.forEach(c => currentFilters[c.id] = '');
+        let currentStar = 'all'; // 新增：当前星级筛选状态
 
-        // 初始化
         function init() {
             const nav = document.getElementById('categoryNav');
             nav.innerHTML = FILTER_CONFIG.map((c, i) => `
@@ -208,10 +208,9 @@
 
             renderTable(myData);
             bindEvents();
-            updateAvailableTags(); // 初始状态更新标签可见性
+            updateAvailableTags();
         }
 
-        // 核心：动态更新可用标签逻辑
         function updateAvailableTags() {
             FILTER_CONFIG.forEach(config => {
                 const type = config.id;
@@ -220,15 +219,17 @@
                 tagButtons.forEach(btn => {
                     const val = btn.dataset.value;
                     
-                    // 模拟：如果在当前已选条件下，再选这个标签，是否有数据？
                     const hasData = myData.some(item => {
+                        // 1. 检查星级是否匹配
+                        if (currentStar !== 'all' && item.star !== currentStar) return false;
+
+                        // 2. 检查其他维度是否匹配
                         return Object.keys(currentFilters).every(key => {
                             if (key === type) return item[key] === val;
                             return !currentFilters[key] || item[key] === currentFilters[key];
                         });
                     });
 
-                    // 无数据则隐藏标签
                     btn.classList.toggle('hidden', !hasData);
                 });
             });
@@ -240,20 +241,18 @@
             empty.classList.toggle('hidden', items.length > 0);
             
             tbody.innerHTML = items.map(row => {
-                // 根据星级定义颜色
                 let starStyle = "";
                 if (row.star === "6") {
-                    starStyle = "text-orange-500 font-bold"; // 6星橙色，超重磅加粗
+                    starStyle = "text-orange-500 font-bold";
                 } else if (row.star === "5") {
-                    starStyle = "text-amber-500 ";  // 5星深黄色，加粗
+                    starStyle = "text-amber-500 font-bold";
                 } else {
-                    starStyle = "text-slate-500";             // 其他星级默认色
+                    starStyle = "text-slate-500";
                 }
 
                 return `
                     <tr class="hover:bg-white/40 transition-colors border-t border-white/20">
                         ${TABLE_COLUMNS.map(col => {
-                            // 给【武器名称】和【星级】列应用特殊颜色
                             const isHighlightCol = (col.key === 'name' || col.key === 'star');
                             const cellClass = isHighlightCol ? starStyle : "";
                             
@@ -265,10 +264,12 @@
         }
 
         function bindEvents() {
+            // 分类切换
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.addEventListener('click', () => switchCategory(btn.dataset.index));
             });
 
+            // 属性标签点击
             document.querySelectorAll('.filter-tag').forEach(tag => {
                 tag.addEventListener('click', () => {
                     const { type, value } = tag.dataset;
@@ -282,14 +283,38 @@
                         currentFilters[type] = value;
                         tag.classList.add('tag-active');
                         
-                        // 自动跳转下一步
+                        // 自动跳转
                         const activeBtn = document.querySelector('.cat-active');
                         const nextIdx = parseInt(activeBtn.dataset.index) + 1;
                         if (nextIdx < FILTER_CONFIG.length) {
                             setTimeout(() => switchCategory(nextIdx), 300);
                         }
                     }
-                    updateAvailableTags(); // 刷新后续标签可见性
+                    updateAvailableTags();
+                    applyFilters();
+                });
+            });
+
+            // 新增：星级筛选点击事件
+            document.querySelectorAll('.star-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentStar = btn.dataset.star;
+                    
+                    // 更新按钮UI
+                    document.querySelectorAll('.star-btn').forEach(b => {
+                        b.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500 hover:bg-white/50"; // 重置为默认
+                    });
+
+                    // 设置激活样式（根据不同星级给不同颜色）
+                    if (currentStar === '6') {
+                        btn.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-orange-500 text-white shadow-md";
+                    } else if (currentStar === '5') {
+                        btn.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-amber-400 text-white shadow-md";
+                    } else {
+                        btn.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-500 text-white shadow-md";
+                    }
+
+                    updateAvailableTags(); // 星级变了，标签可用性也要变
                     applyFilters();
                 });
             });
@@ -305,17 +330,33 @@
 
         function applyFilters() {
             const result = myData.filter(item => {
+                // 1. 检查星级
+                if (currentStar !== 'all' && item.star !== currentStar) return false;
+                
+                // 2. 检查标签
                 return Object.keys(currentFilters).every(key => !currentFilters[key] || item[key] === currentFilters[key]);
             });
             renderTable(result);
         }
 
         document.getElementById('resetBtn').addEventListener('click', () => {
+            // 重置标签
             Object.keys(currentFilters).forEach(k => currentFilters[k] = '');
             document.querySelectorAll('.filter-tag').forEach(t => {
                 t.classList.remove('tag-active');
                 t.classList.remove('hidden');
             });
+            
+            // 重置星级
+            currentStar = 'all';
+            document.querySelectorAll('.star-btn').forEach(b => {
+                // 暴力重置所有按钮样式，然后激活第一个
+                b.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all text-slate-500 hover:bg-white/50";
+                if(b.dataset.star === 'all') {
+                    b.className = "star-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-500 text-white shadow-sm";
+                }
+            });
+
             switchCategory(0);
             renderTable(myData);
         });
@@ -323,7 +364,4 @@
         init();
     </script>
 </body>
-
 </html>
-
-
